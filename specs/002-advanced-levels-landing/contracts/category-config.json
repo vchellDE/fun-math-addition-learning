@@ -1,0 +1,99 @@
+{
+  "categories": [
+    {
+      "id": "single-digit",
+      "label": "Single Digit (sums up to 9)",
+      "levelId": "simple",
+      "generatorProfile": "uniform-addends",
+      "minAddend": 1,
+      "maxAddend": 9,
+      "minSum": 2,
+      "maxSum": 9
+    },
+    {
+      "id": "make-10",
+      "label": "Make 10 (sums up to 10)",
+      "levelId": "medium",
+      "generatorProfile": "uniform-addends",
+      "minAddend": 1,
+      "maxAddend": 9,
+      "minSum": 6,
+      "maxSum": 10
+    },
+    {
+      "id": "teen-numbers",
+      "label": "Teen Numbers (sums 11–20)",
+      "levelId": "intermediate",
+      "generatorProfile": "uniform-addends",
+      "minAddend": 1,
+      "maxAddend": 9,
+      "minSum": 11,
+      "maxSum": 20
+    },
+    {
+      "id": "bigger-sums",
+      "label": "Bigger Sums (sums 21–30)",
+      "levelId": "advanced",
+      "generatorProfile": "uniform-addends",
+      "minAddend": 6,
+      "maxAddend": 24,
+      "minSum": 21,
+      "maxSum": 30,
+      "maxSmallerAddend": 15
+    },
+    {
+      "id": "two-digit-plus-one",
+      "label": "Two-Digit Plus One (sums 31–50)",
+      "levelId": "expert",
+      "generatorProfile": "two-digit-plus-one",
+      "minSum": 31,
+      "maxSum": 50
+    },
+    {
+      "id": "two-digit-friends",
+      "label": "Two-Digit Friends (sums up to 99)",
+      "levelId": "champion",
+      "generatorProfile": "two-digit-friends",
+      "maxSum": 99
+    }
+  ],
+  "levels": [
+    {
+      "id": "simple",
+      "label": "Simple",
+      "subtitle": "Sums up to 9",
+      "defaultCategoryId": "single-digit"
+    },
+    {
+      "id": "medium",
+      "label": "Medium",
+      "subtitle": "Make 10",
+      "defaultCategoryId": "make-10"
+    },
+    {
+      "id": "intermediate",
+      "label": "Intermediate",
+      "subtitle": "Teen numbers 11–20",
+      "defaultCategoryId": "teen-numbers"
+    },
+    {
+      "id": "advanced",
+      "label": "Advanced",
+      "subtitle": "Bigger sums 21–30",
+      "defaultCategoryId": "bigger-sums"
+    },
+    {
+      "id": "expert",
+      "label": "Expert",
+      "subtitle": "Two-digit + one digit",
+      "defaultCategoryId": "two-digit-plus-one"
+    },
+    {
+      "id": "champion",
+      "label": "Champion",
+      "subtitle": "Two-digit friends",
+      "defaultCategoryId": "two-digit-friends",
+      "hint": "Try Intermediate first if this feels hard!"
+    }
+  ]
+}
