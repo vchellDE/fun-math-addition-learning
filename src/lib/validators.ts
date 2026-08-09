@@ -29,3 +29,27 @@ export function validateAnswer(value: string): ValidationResult {
   }
   return { ok: true, value: parsed };
 }
+
+const MAX_PAD_DIGITS = 3;
+const MAX_PAD_VALUE = 99;
+
+/** Append a digit to the number-pad display string (VR-014) */
+export function appendPadDigit(current: string, digit: string): string {
+  const d = sanitizeNumericInput(digit);
+  if (!d) return current;
+  const next = current + d;
+  if (next.length > MAX_PAD_DIGITS) return current;
+  const parsed = Number.parseInt(next, 10);
+  if (parsed > MAX_PAD_VALUE) return current;
+  return next;
+}
+
+/** Clear number-pad digits */
+export function clearPadDigits(): string {
+  return '';
+}
+
+/** Parse pad digits or return null if empty */
+export function parsePadDigits(digits: string): number | null {
+  return parseAnswer(digits);
+}

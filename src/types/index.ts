@@ -81,3 +81,17 @@ export interface SessionSummary {
 }
 
 export type FeedbackType = 'correct' | 'incorrect' | 'empty' | null;
+
+/** Voice or on-screen number pad — no keyboard typing (v3) */
+export type InputMode = 'voice' | 'number-pad';
+
+/** Push-to-talk UI phases for one answer attempt */
+export type VoiceCapturePhase = 'idle' | 'listening' | 'processing' | 'confirming';
+
+export type ParseSpeechResult =
+  | { ok: true; value: number; rawTranscript: string }
+  | {
+      ok: false;
+      reason: 'no-number' | 'ambiguous' | 'out-of-range';
+      rawTranscript: string;
+    };

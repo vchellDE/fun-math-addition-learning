@@ -1,8 +1,10 @@
-import type { CategoryId, LevelId } from '../types';
+import type { CategoryId, InputMode, LevelId } from '../types';
 import { getCategoryById, getLevelById } from './categories';
+import { isSpeechRecognitionSupported } from './speechRecognition';
 
 const STORAGE_KEY_LEVEL = 'mathApp.lastLevelId';
 const STORAGE_KEY_CATEGORY = 'mathApp.lastCategoryId';
+const STORAGE_KEY_INPUT_MODE = 'answerInputMode';
 
 const DEFAULT_LEVEL: LevelId = 'simple';
 const DEFAULT_CATEGORY: CategoryId = 'single-digit';
@@ -83,4 +85,33 @@ export function loadPreferences(): StoredPreferences | null {
     console.debug('[sessionStorage] load failed — storage unavailable');
     return null;
   }
+}
+
+/** Load saved answer input mode for the browser session */
+export function loadInputMode(): InputMode | null {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY_INPUT_MODE);
+    if (stored === 'voice' || stored === 'number-pad') return stored;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveInputMode(mode: InputMode): void {
+  try {
+    sessionStorage.setItem(STORAGE_KEY_INPUT_MODE, mode);
+    console.debug(`[sessionStorage] inputMode=${mode}`);
+  } catch {
+    console.debug('[sessionStorage] save inputMode failed');
+  }
+}
+
+/** Resolve initial input mode — voice when supported, else number pad */
+export function resolveInitialInputMode(): InputMode {
+  if (!isSpeechRecognitionSupported()) {
+    console.debug('[sessionStorage] speech unsupported → number-pad');
+    return 'number-pad';
+  }
+  return loadInputMode() ?? 'voice';
 }
