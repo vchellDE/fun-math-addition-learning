@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react';
 import type { CategoryId, LevelId } from '../types';
-import { getCategories, getCategoryForLevel, getLevels } from '../lib/categories';
+import { getCategoryForLevel, getLevels } from '../lib/categories';
 import { loadPreferences, savePreferences } from '../lib/sessionStorage';
 
-interface HomeScreenProps {
+interface LevelSelectScreenProps {
   onStart: (levelId: LevelId, categoryId: CategoryId) => void;
+  onGoHome: () => void;
 }
 
 const DEFAULT_LEVEL: LevelId = 'simple';
 const DEFAULT_CATEGORY: CategoryId = 'single-digit';
 
-export function HomeScreen({ onStart }: HomeScreenProps) {
+export function LevelSelectScreen({ onStart, onGoHome }: LevelSelectScreenProps) {
   const [selectedLevel, setSelectedLevel] = useState<LevelId>(DEFAULT_LEVEL);
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>(DEFAULT_CATEGORY);
 
   const levels = getLevels();
-  const categories = getCategories();
 
   // Restore last-selected level from sessionStorage on mount
   useEffect(() => {
@@ -38,13 +38,13 @@ export function HomeScreen({ onStart }: HomeScreenProps) {
     onStart(selectedLevel, selectedCategory);
   };
 
-  const currentCategory = categories.find((c) => c.id === selectedCategory);
+  const currentLevel = levels.find((l) => l.id === selectedLevel);
 
   return (
     <div className="app-card">
-      <h1>Fun Math</h1>
-      <p className="category-label">Pick a level, then start!</p>
-      <div className="button-group" role="group" aria-label="Difficulty level">
+      <h1>Pick Your Level</h1>
+      <p className="category-label">Choose a level, then start!</p>
+      <div className="button-group level-grid" role="group" aria-label="Difficulty level">
         {levels.map((level) => (
           <button
             key={level.id}
@@ -52,16 +52,20 @@ export function HomeScreen({ onStart }: HomeScreenProps) {
             className={`btn-level ${selectedLevel === level.id ? 'selected' : ''}`}
             onClick={() => handleLevelSelect(level.id)}
           >
-            {level.label}
+            <span className="level-btn-label">{level.label}</span>
+            <span className="level-btn-subtitle">{level.subtitle}</span>
           </button>
         ))}
       </div>
-      {currentCategory && (
-        <p className="category-label">{currentCategory.label}</p>
+      {currentLevel?.hint && selectedLevel === 'champion' && (
+        <p className="level-hint">{currentLevel.hint}</p>
       )}
       <div className="button-group">
         <button type="button" className="btn-primary" onClick={handleStart}>
           Start Practice
+        </button>
+        <button type="button" className="btn-secondary" onClick={onGoHome}>
+          Home
         </button>
       </div>
     </div>

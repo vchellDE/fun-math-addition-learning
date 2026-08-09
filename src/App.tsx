@@ -9,7 +9,8 @@ import type {
   SessionSummary,
 } from './types';
 import { OfflineBanner } from './components/OfflineBanner';
-import { HomeScreen } from './components/HomeScreen';
+import { LandingScreen } from './components/LandingScreen';
+import { LevelSelectScreen } from './components/LevelSelectScreen';
 import { PracticeScreen } from './components/PracticeScreen';
 import { SummaryScreen } from './components/SummaryScreen';
 import { nextCorrectMessageIndex } from './components/FeedbackBanner';
@@ -47,7 +48,7 @@ function buildSummary(session: PracticeSession): SessionSummary {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<AppScreen>('idle');
+  const [screen, setScreen] = useState<AppScreen>('landing');
   const [session, setSession] = useState<PracticeSession | null>(null);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [feedback, setFeedback] = useState<FeedbackType>(null);
@@ -58,9 +59,19 @@ export default function App() {
     categoryId: CategoryId;
   }>({ levelId: 'simple', categoryId: 'single-digit' });
 
+  const goToLanding = useCallback(() => {
+    console.debug('[App] navigate → landing');
+    setScreen('landing');
+  }, []);
+
+  const goToLevelSelect = useCallback(() => {
+    console.debug('[App] navigate → level-select');
+    setScreen('level-select');
+  }, []);
+
   const startPractice = useCallback((levelId: LevelId, categoryId: CategoryId) => {
     // Debug: log session start for state machine tracing
-    console.debug(`[App] startPractice level=${levelId} category=${categoryId}`);
+    console.debug(`[App] navigate → active | startPractice level=${levelId} category=${categoryId}`);
     setLastSettings({ levelId, categoryId });
     const newSession = createSession(levelId, categoryId);
     setSession(newSession);
@@ -76,7 +87,9 @@ export default function App() {
       status: 'completed',
       completedAt: Date.now(),
     };
-    console.debug(`[App] session completed correct=${completed.attempts.filter((a) => a.isCorrect).length}`);
+    console.debug(
+      `[App] navigate → completed | correct=${completed.attempts.filter((a) => a.isCorrect).length}`,
+    );
     setSession(completed);
     setSummary(buildSummary(completed));
     setScreen('completed');
@@ -139,6 +152,7 @@ export default function App() {
   }, []);
 
   const handlePracticeAgain = useCallback(() => {
+    // Skip landing and level-select — go straight to active (US4)
     startPractice(lastSettings.levelId, lastSettings.categoryId);
   }, [lastSettings, startPractice]);
 
@@ -147,8 +161,8 @@ export default function App() {
     setSummary(null);
     setFeedback(null);
     setAwaitingAdvance(false);
-    setScreen('idle');
-    console.debug('[App] navigate to idle (change level)');
+    setScreen('level-select');
+    console.debug('[App] navigate → level-select (change level)');
   }, []);
 
   return (
@@ -158,38 +172,42 @@ export default function App() {
   );
 
   function renderScreen() {
-  if (screen === 'idle') {
-    return <HomeScreen onStart={startPractice} />;
-  }
+    if (screen === 'landing') {
+      return <LandingScreen onStartPractice={goToLevelSelect} />;
+    }
 
-  if (screen === 'active' && session) {
-    const problem = session.problems[session.currentIndex];
-    return (
-      <PracticeScreen
-        problem={problem}
-        questionNumber={session.currentIndex + 1}
-        totalQuestions={session.problems.length}
-        levelId={session.levelId}
-        categoryId={session.categoryId}
-        feedback={feedback}
-        correctMessageIndex={correctMessageIndex}
-        inputLocked={awaitingAdvance}
-        onSubmit={handleSubmitAnswer}
-        onEmptySubmit={handleEmptySubmit}
-      />
-    );
-  }
+    if (screen === 'level-select') {
+      return <LevelSelectScreen onStart={startPractice} onGoHome={goToLanding} />;
+    }
 
-  if (screen === 'completed' && summary) {
-    return (
-      <SummaryScreen
-        summary={summary}
-        onPracticeAgain={handlePracticeAgain}
-        onChangeLevel={handleChangeLevel}
-      />
-    );
-  }
+    if (screen === 'active' && session) {
+      const problem = session.problems[session.currentIndex];
+      return (
+        <PracticeScreen
+          problem={problem}
+          questionNumber={session.currentIndex + 1}
+          totalQuestions={session.problems.length}
+          levelId={session.levelId}
+          categoryId={session.categoryId}
+          feedback={feedback}
+          correctMessageIndex={correctMessageIndex}
+          inputLocked={awaitingAdvance}
+          onSubmit={handleSubmitAnswer}
+          onEmptySubmit={handleEmptySubmit}
+        />
+      );
+    }
 
-  return <HomeScreen onStart={startPractice} />;
+    if (screen === 'completed' && summary) {
+      return (
+        <SummaryScreen
+          summary={summary}
+          onPracticeAgain={handlePracticeAgain}
+          onChangeLevel={handleChangeLevel}
+        />
+      );
+    }
+
+    return <LandingScreen onStartPractice={goToLevelSelect} />;
   }
 }

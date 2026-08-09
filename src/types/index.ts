@@ -1,21 +1,50 @@
-export type LevelId = 'simple' | 'medium' | 'intermediate';
-export type CategoryId = 'single-digit' | 'make-10' | 'teen-numbers';
-export type SessionStatus = 'idle' | 'active' | 'completed';
+export type LevelId =
+  | 'simple'
+  | 'medium'
+  | 'intermediate'
+  | 'advanced'
+  | 'expert'
+  | 'champion';
+
+export type CategoryId =
+  | 'single-digit'
+  | 'make-10'
+  | 'teen-numbers'
+  | 'bigger-sums'
+  | 'two-digit-plus-one'
+  | 'two-digit-friends';
+
+export type SessionStatus = 'landing' | 'level-select' | 'active' | 'completed';
+
+export type GeneratorProfile =
+  | 'uniform-addends'
+  | 'two-digit-plus-one'
+  | 'two-digit-friends';
 
 export interface DifficultyLevel {
   id: LevelId;
   label: string;
+  subtitle: string;
   defaultCategoryId: CategoryId;
+  hint?: string;
 }
 
 export interface ProblemCategory {
   id: CategoryId;
   label: string;
   levelId: LevelId;
-  minAddend: number;
-  maxAddend: number;
-  minSum: number;
-  maxSum: number;
+  generatorProfile: GeneratorProfile;
+  minAddend?: number;
+  maxAddend?: number;
+  minSum?: number;
+  maxSum?: number;
+  maxSmallerAddend?: number;
+}
+
+export interface MathFunFact {
+  id: string;
+  text: string;
+  emoji: string | null;
 }
 
 export interface Problem {
