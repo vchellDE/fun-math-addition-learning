@@ -1,0 +1,8 @@
+/* 5-color palette per constitution and ui-screens contract */
+:root {
+  --color-bg: #fff8f0;
+  --color-text: #2d3436;
+  --color-primary: #4a90d9;
+  --color-success: #5cb85c;
+  --color-neutral: #bdc3c7;
+}
