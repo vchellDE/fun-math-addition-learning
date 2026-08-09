@@ -1,0 +1,48 @@
+{
+  "categories": [
+    {
+      "id": "single-digit",
+      "label": "Single Digit (sums up to 9)",
+      "levelId": "simple",
+      "minAddend": 1,
+      "maxAddend": 9,
+      "minSum": 2,
+      "maxSum": 9
+    },
+    {
+      "id": "make-10",
+      "label": "Make 10 (sums up to 10)",
+      "levelId": "medium",
+      "minAddend": 1,
+      "maxAddend": 9,
+      "minSum": 6,
+      "maxSum": 10
+    },
+    {
+      "id": "teen-numbers",
+      "label": "Teen Numbers (sums 11–20)",
+      "levelId": "intermediate",
+      "minAddend": 1,
+      "maxAddend": 9,
+      "minSum": 11,
+      "maxSum": 20
+    }
+  ],
+  "levels": [
+    {
+      "id": "simple",
+      "label": "Simple",
+      "defaultCategoryId": "single-digit"
+    },
+    {
+      "id": "medium",
+      "label": "Medium",
+      "defaultCategoryId": "make-10"
+    },
+    {
+      "id": "intermediate",
+      "label": "Intermediate",
+      "defaultCategoryId": "teen-numbers"
+    }
+  ]
+}
