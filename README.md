@@ -37,7 +37,7 @@ npm test
 2. Tap **Let's Practice!** to choose a level
 3. Pick a level: **Simple** through **Champion**
 4. Tap **Start Practice**
-5. Solve each addition problem in your head and type the answer
+5. Solve each addition problem in your head, then **hold "Hold to Speak"** and say your answer (or use the **number pad** if the microphone is unavailable)
 6. Get encouraging feedback after each question
 7. See your score at the end and practice again or change level
 
@@ -89,7 +89,7 @@ This repo uses [GitHub Spec Kit](https://github.com/github/spec-kit) (CLI `speci
 | 4 | `/speckit-tasks` | Generate actionable tasks |
 | 5 | `/speckit-implement` | Execute the implementation |
 
-Feature specs: `specs/001-mental-math-addition/`, `specs/002-advanced-levels-landing/`
+Feature specs: `specs/001-mental-math-addition/`, `specs/002-advanced-levels-landing/`, `specs/003-voice-answer-input/`
 
 ## Project layout
 
