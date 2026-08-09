@@ -1,6 +1,6 @@
 # Fun Math Addition Learning
 
-A kid-friendly web app for mental math addition practice. Children complete 10-question rounds across three levels (Simple, Medium, Intermediate) without finger-counting aids.
+A kid-friendly web app for mental math addition practice. Children explore fun math facts on a welcoming landing page, then complete 10-question rounds across six levels (Simple through Champion) without finger-counting aids.
 
 ## Quick start
 
@@ -33,11 +33,13 @@ npm test
 
 ## How to use
 
-1. Pick a level: **Simple**, **Medium**, or **Intermediate**
-2. Tap **Start Practice**
-3. Solve each addition problem in your head and type the answer
-4. Get encouraging feedback after each question
-5. See your score at the end and practice again or change level
+1. Read a math fun fact on the **landing page** (tap **Next Fact** for more)
+2. Tap **Let's Practice!** to choose a level
+3. Pick a level: **Simple** through **Champion**
+4. Tap **Start Practice**
+5. Solve each addition problem in your head and type the answer
+6. Get encouraging feedback after each question
+7. See your score at the end and practice again or change level
 
 ## Difficulty levels
 
@@ -46,6 +48,9 @@ npm test
 | Simple | Single Digit | 2–9 |
 | Medium | Make 10 | 6–10 |
 | Intermediate | Teen Numbers | 11–20 |
+| Advanced | Bigger Sums | 21–30 |
+| Expert | Two-Digit Plus One | 31–50 |
+| Champion | Two-Digit Friends | up to 99 |
 
 ## Deploy to Render
 
@@ -84,14 +89,14 @@ This repo uses [GitHub Spec Kit](https://github.com/github/spec-kit) (CLI `speci
 | 4 | `/speckit-tasks` | Generate actionable tasks |
 | 5 | `/speckit-implement` | Execute the implementation |
 
-Feature spec: `specs/001-mental-math-addition/`
+Feature specs: `specs/001-mental-math-addition/`, `specs/002-advanced-levels-landing/`
 
 ## Project layout
 
 ```
 src/
-  components/     # Home, Practice, Summary screens
-  lib/            # Problem generator, validators, categories
+  components/     # Landing, Level Select, Practice, Summary screens
+  lib/            # Problem generator, fun facts, categories
   styles/         # 5-color palette and global CSS
 specs/            # Feature specs and design artifacts
 ```
