@@ -3,7 +3,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from '../../src/App';
 import type { CategoryId, Problem } from '../../src/types';
 
-// Fixed problems so tests can predict correct answers (1+1=2)
 const FIXED_PROBLEMS: Problem[] = Array.from({ length: 10 }, (_, i) => ({
   id: `p-${i + 1}`,
   addendA: 1,
@@ -27,24 +26,32 @@ function startPracticeFromLanding() {
   fireEvent.click(screen.getByRole('button', { name: /start practice/i }));
 }
 
+/** Submit answer "2" via number pad (jsdom has no speech recognition) */
+async function submitAnswerTwo() {
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: /^check$/i })).not.toBeDisabled();
+  });
+  fireEvent.click(screen.getByRole('button', { name: /digit 2/i }));
+  fireEvent.click(screen.getByRole('button', { name: /^check$/i }));
+}
+
 describe('Practice flow', () => {
   beforeEach(() => {
     sessionStorage.clear();
   });
 
   it(
-    'completes landing → level-select → practice → summary journey',
+    'completes landing → level-select → practice → summary journey via number pad',
     async () => {
       render(<App />);
 
       expect(screen.getByText(/welcome to fun math/i)).toBeInTheDocument();
       startPracticeFromLanding();
       expect(screen.getByText(/question 1 of 10/i)).toBeInTheDocument();
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 
       for (let i = 1; i <= 10; i++) {
-        const answerInput = screen.getByLabelText(/your answer/i);
-        fireEvent.change(answerInput, { target: { value: '2' } });
-        fireEvent.click(screen.getByRole('button', { name: /check/i }));
+        await submitAnswerTwo();
 
         if (i < 10) {
           await waitFor(
@@ -67,13 +74,13 @@ describe('Practice flow', () => {
     25000,
   );
 
-  it('shows gentle prompt when Check is tapped with empty answer', async () => {
+  it('shows gentle prompt when Check is tapped with empty pad', async () => {
     render(<App />);
 
     startPracticeFromLanding();
-    fireEvent.click(screen.getByRole('button', { name: /check/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^check$/i }));
 
-    expect(screen.getByText(/type your answer first/i)).toBeInTheDocument();
+    expect(screen.getByText(/tap the numbers, then press check/i)).toBeInTheDocument();
     expect(screen.getByText(/question 1 of 10/i)).toBeInTheDocument();
   });
 
@@ -84,9 +91,7 @@ describe('Practice flow', () => {
       startPracticeFromLanding();
 
       for (let i = 1; i <= 10; i++) {
-        const answerInput = screen.getByLabelText(/your answer/i);
-        fireEvent.change(answerInput, { target: { value: '2' } });
-        fireEvent.click(screen.getByRole('button', { name: /check/i }));
+        await submitAnswerTwo();
 
         if (i < 10) {
           await waitFor(
