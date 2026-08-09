@@ -21,17 +21,24 @@ vi.mock('../../src/lib/problemGenerator', () => ({
   InvalidCountError: class InvalidCountError extends Error {},
 }));
 
+/** Navigate from landing to level-select and start practice */
+function startPracticeFromLanding() {
+  fireEvent.click(screen.getByRole('button', { name: /let's practice/i }));
+  fireEvent.click(screen.getByRole('button', { name: /start practice/i }));
+}
+
 describe('Practice flow', () => {
   beforeEach(() => {
     sessionStorage.clear();
   });
 
   it(
-    'completes home → practice → summary journey',
+    'completes landing → level-select → practice → summary journey',
     async () => {
       render(<App />);
 
-      fireEvent.click(screen.getByRole('button', { name: /start practice/i }));
+      expect(screen.getByText(/welcome to fun math/i)).toBeInTheDocument();
+      startPracticeFromLanding();
       expect(screen.getByText(/question 1 of 10/i)).toBeInTheDocument();
 
       for (let i = 1; i <= 10; i++) {
@@ -63,10 +70,40 @@ describe('Practice flow', () => {
   it('shows gentle prompt when Check is tapped with empty answer', async () => {
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: /start practice/i }));
+    startPracticeFromLanding();
     fireEvent.click(screen.getByRole('button', { name: /check/i }));
 
     expect(screen.getByText(/type your answer first/i)).toBeInTheDocument();
     expect(screen.getByText(/question 1 of 10/i)).toBeInTheDocument();
   });
+
+  it(
+    'Change Level goes to level-select not landing',
+    async () => {
+      render(<App />);
+      startPracticeFromLanding();
+
+      for (let i = 1; i <= 10; i++) {
+        const answerInput = screen.getByLabelText(/your answer/i);
+        fireEvent.change(answerInput, { target: { value: '2' } });
+        fireEvent.click(screen.getByRole('button', { name: /check/i }));
+
+        if (i < 10) {
+          await waitFor(
+            () => {
+              expect(screen.getByText(`Question ${i + 1} of 10`)).toBeInTheDocument();
+            },
+            { timeout: 3000 },
+          );
+        }
+      }
+
+      await waitFor(() => screen.getByText(/all done/i), { timeout: 3000 });
+      fireEvent.click(screen.getByRole('button', { name: /change level/i }));
+
+      expect(screen.getByText(/pick your level/i)).toBeInTheDocument();
+      expect(screen.queryByText(/welcome to fun math/i)).not.toBeInTheDocument();
+    },
+    25000,
+  );
 });
