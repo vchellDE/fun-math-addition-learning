@@ -259,3 +259,134 @@ button:disabled {
     gap: 0.75rem;
   }
 }
+
+/* Voice answer input (v3) */
+.btn-speak {
+  width: 100%;
+  min-height: 56px;
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-size: 1.25rem;
+  touch-action: none;
+  user-select: none;
+}
+
+.btn-speak.listening {
+  opacity: 0.85;
+}
+
+.heard-answer-banner {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 2px solid var(--color-neutral);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.heard-answer-label {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+}
+
+.heard-answer-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.heard-answer-hint {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--color-text-muted, #666);
+}
+
+.heard-answer-actions {
+  margin-top: 0.5rem;
+}
+
+.number-pad {
+  margin-top: 0.5rem;
+}
+
+.pad-display {
+  min-height: 56px;
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  border: 2px solid var(--color-neutral);
+  border-radius: 12px;
+  padding: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.pad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.pad-key {
+  min-height: 48px;
+  font-size: 1.25rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 2px solid var(--color-neutral);
+}
+
+.pad-key-check {
+  border-color: transparent;
+}
+
+.pad-key-clear {
+  font-size: 0.95rem;
+}
+
+.mic-permission-prompt {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 2px solid var(--color-neutral);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.mic-prompt-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.mic-prompt-body {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+}
+
+.input-mode-hint,
+.space-hint {
+  text-align: center;
+  font-size: 0.9rem;
+  margin: 0.5rem 0 0;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  text-decoration: underline;
+  font-size: inherit;
+  min-height: auto;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+
+.link-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.space-hint {
+  opacity: 0.8;
+}
+
+@media (max-width: 767px) {
+  .space-hint {
+    display: none;
+  }
+}
