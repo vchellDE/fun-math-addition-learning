@@ -5,3 +5,19 @@ __pycache__/
 .venv/
 *.log
 .DS_Store
+
+# Node / Vite
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+*.local
+.env*
+!.env.example
+
+# Cursor — commit Spec Kit skills; ignore local agent state (overrides global .cursor/ ignore)
+!.cursor/
+.cursor/*
+!.cursor/skills/
+!.cursor/skills/**
