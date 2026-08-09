@@ -3,6 +3,7 @@ import type {
   AnswerAttempt,
   CategoryId,
   FeedbackType,
+  InputMode,
   LevelId,
   PracticeSession,
   SessionStatus,
@@ -16,6 +17,7 @@ import { SummaryScreen } from './components/SummaryScreen';
 import { nextCorrectMessageIndex } from './components/FeedbackBanner';
 import { getCategoryById, getLevelById } from './lib/categories';
 import { generateRound, getCorrectSum } from './lib/problemGenerator';
+import { resolveInitialInputMode, saveInputMode } from './lib/sessionStorage';
 
 const ROUND_SIZE = 10;
 const FEEDBACK_DELAY_MS = 1500;
@@ -58,6 +60,13 @@ export default function App() {
     levelId: LevelId;
     categoryId: CategoryId;
   }>({ levelId: 'simple', categoryId: 'single-digit' });
+  const [inputMode, setInputMode] = useState<InputMode>(() => resolveInitialInputMode());
+
+  const handleInputModeChange = useCallback((mode: InputMode) => {
+    console.debug(`[App] inputMode → ${mode}`);
+    setInputMode(mode);
+    saveInputMode(mode);
+  }, []);
 
   const goToLanding = useCallback(() => {
     console.debug('[App] navigate → landing');
@@ -192,6 +201,8 @@ export default function App() {
           feedback={feedback}
           correctMessageIndex={correctMessageIndex}
           inputLocked={awaitingAdvance}
+          inputMode={inputMode}
+          onInputModeChange={handleInputModeChange}
           onSubmit={handleSubmitAnswer}
           onEmptySubmit={handleEmptySubmit}
         />

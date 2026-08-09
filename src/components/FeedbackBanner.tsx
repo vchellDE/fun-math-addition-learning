@@ -1,14 +1,20 @@
-import type { FeedbackType } from '../types';
+import type { FeedbackType, InputMode } from '../types';
 
 const CORRECT_MESSAGES = ['Great job!', 'Yes!', 'Nice!'];
 
 interface FeedbackBannerProps {
   type: FeedbackType;
+  inputMode?: InputMode;
   correctAnswer?: number;
   messageIndex?: number;
 }
 
-export function FeedbackBanner({ type, correctAnswer, messageIndex = 0 }: FeedbackBannerProps) {
+export function FeedbackBanner({
+  type,
+  inputMode = 'voice',
+  correctAnswer,
+  messageIndex = 0,
+}: FeedbackBannerProps) {
   if (!type) return null;
 
   let message: string;
@@ -24,7 +30,10 @@ export function FeedbackBanner({ type, correctAnswer, messageIndex = 0 }: Feedba
       className += ' incorrect';
       break;
     case 'empty':
-      message = 'Type your answer first.';
+      message =
+        inputMode === 'number-pad'
+          ? 'Tap the numbers, then press Check.'
+          : 'Hold the button and say your answer.';
       className += ' empty';
       break;
     default:
