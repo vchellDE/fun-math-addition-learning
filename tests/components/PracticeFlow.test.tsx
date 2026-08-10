@@ -1,7 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import App from '../../src/App';
 import type { CategoryId, Problem } from '../../src/types';
+import {
+  FEEDBACK_DELAY_CORRECT_MS,
+  FEEDBACK_DELAY_INCORRECT_MS,
+} from '../../src/lib/timingConfig';
 
 const FIXED_PROBLEMS: Problem[] = Array.from({ length: 10 }, (_, i) => ({
   id: `p-${i + 1}`,
@@ -26,13 +30,17 @@ function startPracticeFromLanding() {
   fireEvent.click(screen.getByRole('button', { name: /start practice/i }));
 }
 
-/** Submit answer "2" via number pad (jsdom has no speech recognition) */
-async function submitAnswerTwo() {
+/** Submit answer via number pad (jsdom has no speech recognition) */
+async function submitAnswerDigit(digit: number) {
   await waitFor(() => {
     expect(screen.getByRole('button', { name: /^check$/i })).not.toBeDisabled();
   });
-  fireEvent.click(screen.getByRole('button', { name: /digit 2/i }));
+  fireEvent.click(screen.getByRole('button', { name: new RegExp(`digit ${digit}`, 'i') }));
   fireEvent.click(screen.getByRole('button', { name: /^check$/i }));
+}
+
+async function submitAnswerTwo() {
+  await submitAnswerDigit(2);
 }
 
 describe('Practice flow', () => {
@@ -82,6 +90,48 @@ describe('Practice flow', () => {
 
     expect(screen.getByText(/tap the numbers, then press check/i)).toBeInTheDocument();
     expect(screen.getByText(/question 1 of 10/i)).toBeInTheDocument();
+  });
+
+  describe('feedback advance timers', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it(`advances to next question after ${FEEDBACK_DELAY_CORRECT_MS}ms on correct answer`, async () => {
+      render(<App />);
+      startPracticeFromLanding();
+
+      fireEvent.click(screen.getByRole('button', { name: /digit 2/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^check$/i }));
+
+      expect(screen.getByText(/question 1 of 10/i)).toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(FEEDBACK_DELAY_CORRECT_MS);
+      });
+
+      expect(screen.getByText(/question 2 of 10/i)).toBeInTheDocument();
+    });
+
+    it(`advances to next question after ${FEEDBACK_DELAY_INCORRECT_MS}ms on incorrect answer`, async () => {
+      render(<App />);
+      startPracticeFromLanding();
+
+      fireEvent.click(screen.getByRole('button', { name: /digit 3/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^check$/i }));
+
+      expect(screen.getByText(/question 1 of 10/i)).toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(FEEDBACK_DELAY_INCORRECT_MS);
+      });
+
+      expect(screen.getByText(/question 2 of 10/i)).toBeInTheDocument();
+    });
   });
 
   it(
