@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseSpokenNumber } from '../../src/lib/speechParser';
+import { parseSpokenNumber, parseSpokenAlternatives } from '../../src/lib/speechParser';
 
 describe('parseSpokenNumber', () => {
   // Single digits
@@ -118,5 +118,55 @@ describe('parseSpokenNumber', () => {
     const result = parseSpokenNumber('100');
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe('out-of-range');
+  });
+
+  // Homophones (v4)
+  it.each([
+    ['fitty', 50],
+    ['fiddy', 50],
+    ['fiveteen', 15],
+    ['forteen', 14],
+    ['thirtee', 13],
+  ])('parses homophone "%s" → %i', (word, expected) => {
+    const result = parseSpokenNumber(word);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBe(expected);
+  });
+
+  // Mid-phrase fillers (v4)
+  it.each([
+    ['seven um', 7],
+    ["it's seven", 7],
+    ['like five', 5],
+  ])('parses mid-phrase filler "%s" → %i', (phrase, expected) => {
+    const result = parseSpokenNumber(phrase);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBe(expected);
+  });
+
+  // expectedMax tie-breaking within transcript
+  it('uses expectedMax to disambiguate fifteen vs fifty', () => {
+    const result = parseSpokenNumber('fifteen fifty', { expectedMax: 17 });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBe(15);
+  });
+
+  it('returns ambiguous when expectedMax cannot break tie', () => {
+    const result = parseSpokenNumber('fifteen fifty', { expectedMax: 99 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe('ambiguous');
+  });
+
+  // Alternative tie-breaking across STT alternatives
+  it('parseSpokenAlternatives picks value within expectedMax', () => {
+    const result = parseSpokenAlternatives(['fifty', 'fifteen'], { expectedMax: 17 });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBe(15);
+  });
+
+  it('parseSpokenAlternatives uses first ok when values agree', () => {
+    const result = parseSpokenAlternatives(['two', 'to'], { expectedMax: 2 });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBe(2);
   });
 });

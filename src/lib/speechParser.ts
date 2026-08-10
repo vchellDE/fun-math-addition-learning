@@ -1,5 +1,10 @@
 import type { ParseSpeechResult } from '../types';
 
+export interface ParseSpeechOptions {
+  /** Tie-breaker when multiple valid numbers parsed; typically problem sum */
+  expectedMax?: number;
+}
+
 const ONES: Record<string, number> = {
   zero: 0,
   oh: 0,
@@ -35,6 +40,15 @@ const TENS: Record<string, number> = {
   ninety: 90,
 };
 
+/** Homophone / STT mis-hearing normalization (token-level) */
+const HOMOPHONE_MAP: Record<string, string> = {
+  fitty: 'fifty',
+  fiddy: 'fifty',
+  fiveteen: 'fifteen',
+  forteen: 'fourteen',
+  thirtee: 'thirteen',
+};
+
 const FILLER_PREFIXES = [
   'um',
   'uh',
@@ -44,6 +58,33 @@ const FILLER_PREFIXES = [
   'equals',
   'is',
 ];
+
+/** Global filler tokens removed anywhere in phrase */
+const GLOBAL_FILLER_TOKENS = new Set([
+  'um',
+  'uh',
+  'like',
+  "it's",
+  'its',
+  'the',
+  'answer',
+  'is',
+  'equals',
+]);
+
+function applyHomophoneMap(text: string): string {
+  return text
+    .split(' ')
+    .map((token) => HOMOPHONE_MAP[token] ?? token)
+    .join(' ');
+}
+
+function removeGlobalFillers(text: string): string {
+  return text
+    .split(' ')
+    .filter((token) => token.length > 0 && !GLOBAL_FILLER_TOKENS.has(token))
+    .join(' ');
+}
 
 /** Normalize spoken transcript for number parsing */
 function normalizeTranscript(transcript: string): string {
@@ -57,6 +98,9 @@ function normalizeTranscript(transcript: string): string {
       text = text.slice(filler.length + 1).trim();
     }
   }
+
+  text = applyHomophoneMap(text);
+  text = removeGlobalFillers(text);
 
   return text;
 }
@@ -81,8 +125,33 @@ function parseWordNumber(text: string): number | null {
   return null;
 }
 
+/** Tie-break among multiple candidate values using expectedMax (VR-025) */
+function resolveCandidates(
+  candidates: number[],
+  rawTranscript: string,
+  options?: ParseSpeechOptions,
+): ParseSpeechResult {
+  const unique = [...new Set(candidates)];
+
+  if (unique.length === 1) {
+    return { ok: true, value: unique[0], rawTranscript };
+  }
+
+  if (options?.expectedMax !== undefined) {
+    const filtered = unique.filter((v) => v <= options.expectedMax!);
+    if (filtered.length === 1) {
+      return { ok: true, value: filtered[0], rawTranscript };
+    }
+  }
+
+  return { ok: false, reason: 'ambiguous', rawTranscript };
+}
+
 /** Convert speech transcript to a number 0–99 for answer scoring */
-export function parseSpokenNumber(transcript: string): ParseSpeechResult {
+export function parseSpokenNumber(
+  transcript: string,
+  options?: ParseSpeechOptions,
+): ParseSpeechResult {
   const rawTranscript = transcript;
   const normalized = normalizeTranscript(transcript);
 
@@ -142,7 +211,7 @@ export function parseSpokenNumber(transcript: string): ParseSpeechResult {
   }
 
   if (numberTokens.length > 1) {
-    return { ok: false, reason: 'ambiguous', rawTranscript };
+    return resolveCandidates(numberTokens, rawTranscript, options);
   }
 
   const value = numberTokens[0];
@@ -151,4 +220,30 @@ export function parseSpokenNumber(transcript: string): ParseSpeechResult {
   }
 
   return { ok: true, value, rawTranscript };
+}
+
+/** Parse STT alternatives; first ok wins unless multiple values need tie-break */
+export function parseSpokenAlternatives(
+  alternatives: string[],
+  options?: ParseSpeechOptions,
+): ParseSpeechResult {
+  const successes: ParseSpeechResult[] = [];
+
+  for (const alt of alternatives) {
+    const result = parseSpokenNumber(alt, options);
+    if (result.ok) {
+      successes.push(result);
+    }
+  }
+
+  if (successes.length === 0) {
+    return {
+      ok: false,
+      reason: 'no-number',
+      rawTranscript: alternatives[0] ?? '',
+    };
+  }
+
+  const values = successes.map((s) => (s.ok ? s.value : 0));
+  return resolveCandidates(values, successes[0].rawTranscript, options);
 }
