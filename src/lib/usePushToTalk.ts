@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import type { VoiceCapturePhase } from '../types';
+import { markTiming } from './questionTiming';
 import { createRecognitionSession, isSpeechRecognitionSupported } from './speechRecognition';
+import { RELEASE_GRACE_MS } from './timingConfig';
 
 const LISTEN_TIMEOUT_MS = 5000;
 
 interface UsePushToTalkOptions {
   enabled: boolean;
   spaceEnabled?: boolean;
-  onTranscript: (text: string) => void;
+  onAlternatives: (alternatives: string[]) => void;
   onEmpty: () => void;
   onError: (code: string) => void;
 }
@@ -15,7 +17,7 @@ interface UsePushToTalkOptions {
 export function usePushToTalk({
   enabled,
   spaceEnabled = false,
-  onTranscript,
+  onAlternatives,
   onEmpty,
   onError,
 }: UsePushToTalkOptions) {
@@ -23,6 +25,7 @@ export function usePushToTalk({
   const [isListening, setIsListening] = useState(false);
   const sessionRef = useRef<ReturnType<typeof createRecognitionSession> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const graceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gotResultRef = useRef(false);
   const holdingRef = useRef(false);
 
@@ -33,8 +36,16 @@ export function usePushToTalk({
     }
   }, []);
 
+  const clearGraceTimer = useCallback(() => {
+    if (graceRef.current) {
+      clearTimeout(graceRef.current);
+      graceRef.current = null;
+    }
+  }, []);
+
   const endSession = useCallback(() => {
     clearListenTimeout();
+    clearGraceTimer();
     sessionRef.current?.abort();
     sessionRef.current = null;
     holdingRef.current = false;
@@ -42,32 +53,58 @@ export function usePushToTalk({
     if (phase === 'listening' || phase === 'processing') {
       setPhase('idle');
     }
-  }, [clearListenTimeout, phase]);
+  }, [clearListenTimeout, clearGraceTimer, phase]);
+
+  const handleAlternatives = useCallback(
+    (alternatives: string[]) => {
+      gotResultRef.current = true;
+      clearGraceTimer();
+      const nonEmpty = alternatives.map((a) => a.trim()).filter(Boolean);
+      console.debug('[usePushToTalk] VoiceTimingMarker transcriptReceived', nonEmpty);
+      markTiming('transcriptReceived', nonEmpty.length);
+      if (nonEmpty.length > 0) {
+        onAlternatives(nonEmpty);
+      } else {
+        onEmpty();
+      }
+    },
+    [onAlternatives, onEmpty, clearGraceTimer],
+  );
+
+  const scheduleReleaseGrace = useCallback(() => {
+    if (gotResultRef.current) return;
+    clearGraceTimer();
+    console.debug(`[usePushToTalk] release grace ${RELEASE_GRACE_MS}ms`);
+    graceRef.current = setTimeout(() => {
+      if (!gotResultRef.current) {
+        console.debug('[usePushToTalk] release grace expired — empty');
+        onEmpty();
+      }
+    }, RELEASE_GRACE_MS);
+  }, [onEmpty, clearGraceTimer]);
 
   const startListening = useCallback(() => {
     if (!enabled || !isSpeechRecognitionSupported() || holdingRef.current) return;
+
+    // Abort stale session before starting a new capture
+    sessionRef.current?.abort();
+    sessionRef.current = null;
+    clearGraceTimer();
 
     gotResultRef.current = false;
     holdingRef.current = true;
     setIsListening(true);
     setPhase('listening');
-    console.debug('[usePushToTalk] listening started');
+    console.debug('[usePushToTalk] VoiceTimingMarker listenStart');
+    markTiming('listenStart');
 
     sessionRef.current = createRecognitionSession({
-      onResult: (transcript) => {
-        gotResultRef.current = true;
-        const trimmed = transcript.trim();
-        if (trimmed) {
-          onTranscript(trimmed);
-        } else {
-          onEmpty();
-        }
-      },
+      onResult: handleAlternatives,
       onError: (code) => {
         if (code !== 'aborted' && code !== 'no-speech') {
           onError(code);
         } else if (!gotResultRef.current) {
-          onEmpty();
+          scheduleReleaseGrace();
         }
       },
       onEnd: () => {
@@ -76,7 +113,11 @@ export function usePushToTalk({
         clearListenTimeout();
         sessionRef.current = null;
         holdingRef.current = false;
-        console.debug('[usePushToTalk] listening ended');
+        console.debug('[usePushToTalk] VoiceTimingMarker listenEnd');
+        markTiming('listenEnd');
+        if (!gotResultRef.current) {
+          scheduleReleaseGrace();
+        }
       },
     });
 
@@ -85,11 +126,8 @@ export function usePushToTalk({
     timeoutRef.current = setTimeout(() => {
       console.debug('[usePushToTalk] listen timeout');
       sessionRef.current?.stop();
-      if (!gotResultRef.current) {
-        onEmpty();
-      }
     }, LISTEN_TIMEOUT_MS);
-  }, [enabled, onTranscript, onEmpty, onError, clearListenTimeout]);
+  }, [enabled, handleAlternatives, onError, clearListenTimeout, clearGraceTimer, scheduleReleaseGrace]);
 
   const stopListening = useCallback(() => {
     if (!holdingRef.current) return;
@@ -107,9 +145,10 @@ export function usePushToTalk({
   useEffect(() => {
     return () => {
       clearListenTimeout();
+      clearGraceTimer();
       sessionRef.current?.abort();
     };
-  }, [clearListenTimeout]);
+  }, [clearListenTimeout, clearGraceTimer]);
 
   // Space key shortcut (US4)
   useEffect(() => {

@@ -58,7 +58,7 @@ export interface RecognitionSession {
 
 export function createRecognitionSession(options: {
   lang?: string;
-  onResult: (transcript: string) => void;
+  onResult: (alternatives: string[]) => void;
   onError: (code: string) => void;
   onEnd: () => void;
 }): RecognitionSession | null {
@@ -69,12 +69,18 @@ export function createRecognitionSession(options: {
   recognition.continuous = false;
   recognition.interimResults = false;
   recognition.lang = options.lang ?? 'en-US';
-  recognition.maxAlternatives = 1;
+  recognition.maxAlternatives = 3;
 
   recognition.onresult = (event) => {
-    const transcript = event.results[0]?.[0]?.transcript ?? '';
-    console.debug(`[speechRecognition] result="${transcript}"`);
-    options.onResult(transcript);
+    const alternatives: string[] = [];
+    const result = event.results[0];
+    if (result) {
+      for (let i = 0; i < result.length; i++) {
+        alternatives.push(result[i]?.transcript ?? '');
+      }
+    }
+    console.debug(`[speechRecognition] alternatives=${JSON.stringify(alternatives)}`);
+    options.onResult(alternatives);
   };
 
   recognition.onerror = (event) => {
