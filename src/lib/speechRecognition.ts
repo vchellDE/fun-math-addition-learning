@@ -1,6 +1,11 @@
 /** Web Speech API types — browser provides implementation */
+interface SpeechRecognitionResultLike {
+  length: number;
+  [index: number]: { transcript: string };
+}
+
 interface SpeechRecognitionEventLike {
-  results: { length: number; [index: number]: { [index: number]: { transcript: string } } };
+  results: { length: number; [index: number]: SpeechRecognitionResultLike };
 }
 
 interface SpeechRecognitionLike {
