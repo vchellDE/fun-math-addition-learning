@@ -6,12 +6,11 @@ import { HeardAnswerBanner } from './HeardAnswerBanner';
 import { MicPermissionPrompt } from './MicPermissionPrompt';
 import { NumberPad } from './NumberPad';
 import { getCategoryById, getLevelById } from '../lib/categories';
-import { parseSpokenNumber } from '../lib/speechParser';
+import { parseSpokenAlternatives } from '../lib/speechParser';
 import { isSpeechRecognitionSupported, requestMicrophonePermission } from '../lib/speechRecognition';
+import { markTiming, startQuestionTiming } from '../lib/questionTiming';
+import { AUTO_CONFIRM_DELAY_MS } from '../lib/timingConfig';
 import { usePushToTalk } from '../lib/usePushToTalk';
-
-/** Brief pause after release so kids can see "I heard: N" before scoring */
-const AUTO_CONFIRM_DELAY_MS = 750;
 
 interface PracticeScreenProps {
   problem: Problem;
@@ -54,17 +53,21 @@ export function PracticeScreen({
 
   const voiceEnabled = inputMode === 'voice' && micReady && !inputLocked && heardValue === null;
 
+  const expectedMax = problem.addendA + problem.addendB;
+
   const { phase, setPhase, isListening, speakButtonProps } = usePushToTalk({
     enabled: voiceEnabled,
-    spaceEnabled: voiceEnabled,
-    onTranscript: (transcript) => {
-      const parsed = parseSpokenNumber(transcript);
+    spaceEnabled: voiceEnabled && !showMicPrompt,
+    onAlternatives: (alternatives) => {
+      const parsed = parseSpokenAlternatives(alternatives, { expectedMax });
       console.debug('[PracticeScreen] parsed speech', parsed);
       if (!parsed.ok) {
         onEmptySubmit();
         return;
       }
       setHeardValue(parsed.value);
+      console.debug('[PracticeScreen] VoiceTimingMarker heardDisplayed', parsed.value);
+      markTiming('heardDisplayed', parsed.value);
       setPhase('confirming');
     },
     onEmpty: onEmptySubmit,
@@ -86,6 +89,8 @@ export function PracticeScreen({
     setPadDigits('');
     setPhase('idle');
     console.debug(`[PracticeScreen] new question ${questionNumber}`);
+    // Debug: start per-question load/response/nextLoad clocks
+    startQuestionTiming(questionNumber);
   }, [problem.id, questionNumber, setPhase, clearAutoConfirm]);
 
   const handleConfirmHeard = useCallback(() => {
@@ -113,7 +118,8 @@ export function PracticeScreen({
 
     console.debug('[PracticeScreen] auto-confirm scheduled', AUTO_CONFIRM_DELAY_MS);
     autoConfirmRef.current = setTimeout(() => {
-      console.debug('[PracticeScreen] auto-confirm');
+      console.debug('[PracticeScreen] VoiceTimingMarker answerConfirmed');
+      // answerConfirmed is marked in App.handleSubmitAnswer (covers pad + voice)
       handleConfirmHeard();
     }, AUTO_CONFIRM_DELAY_MS);
 

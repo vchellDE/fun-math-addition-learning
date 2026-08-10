@@ -18,9 +18,14 @@ import { nextCorrectMessageIndex } from './components/FeedbackBanner';
 import { getCategoryById, getLevelById } from './lib/categories';
 import { generateRound, getCorrectSum } from './lib/problemGenerator';
 import { resolveInitialInputMode, saveInputMode } from './lib/sessionStorage';
+import { markTiming, resetQuestionTiming } from './lib/questionTiming';
+import {
+  FEEDBACK_DELAY_CORRECT_MS,
+  FEEDBACK_DELAY_INCORRECT_MS,
+  FEEDBACK_DELAY_SUMMARY_MS,
+} from './lib/timingConfig';
 
 const ROUND_SIZE = 10;
-const FEEDBACK_DELAY_MS = 1500;
 
 type AppScreen = SessionStatus;
 
@@ -81,6 +86,7 @@ export default function App() {
   const startPractice = useCallback((levelId: LevelId, categoryId: CategoryId) => {
     // Debug: log session start for state machine tracing
     console.debug(`[App] navigate → active | startPractice level=${levelId} category=${categoryId}`);
+    resetQuestionTiming();
     setLastSettings({ levelId, categoryId });
     const newSession = createSession(levelId, categoryId);
     setSession(newSession);
@@ -99,6 +105,8 @@ export default function App() {
     console.debug(
       `[App] navigate → completed | correct=${completed.attempts.filter((a) => a.isCorrect).length}`,
     );
+    // Debug: summary transition completes the last question's nextLoad metric
+    markTiming('summaryVisible');
     setSession(completed);
     setSummary(buildSummary(completed));
     setScreen('completed');
@@ -114,19 +122,27 @@ export default function App() {
         currentIndex: nextIndex,
       };
 
-      if (nextIndex >= currentSession.problems.length) {
-        setTimeout(() => {
-          setFeedback(null);
-          setAwaitingAdvance(false);
+      const isLastQuestion = nextIndex >= currentSession.problems.length;
+      const delay = attempt.isCorrect
+        ? isLastQuestion
+          ? FEEDBACK_DELAY_SUMMARY_MS
+          : FEEDBACK_DELAY_CORRECT_MS
+        : FEEDBACK_DELAY_INCORRECT_MS;
+
+      console.debug(`[App] VoiceTimingMarker feedbackShown delay=${delay}ms correct=${attempt.isCorrect}`);
+
+      setTimeout(() => {
+        setFeedback(null);
+        setAwaitingAdvance(false);
+        if (isLastQuestion) {
           finishSession(updatedSession);
-        }, FEEDBACK_DELAY_MS);
-      } else {
-        setTimeout(() => {
-          setFeedback(null);
-          setAwaitingAdvance(false);
+        } else {
+          console.debug('[App] VoiceTimingMarker nextQuestionVisible');
+          // Debug: next question paint — closes nextLoad for current question
+          markTiming('nextQuestionVisible');
           setSession(updatedSession);
-        }, FEEDBACK_DELAY_MS);
-      }
+        }
+      }, delay);
     },
     [finishSession],
   );
@@ -143,11 +159,18 @@ export default function App() {
         timestamp: Date.now(),
       };
 
+      // Debug: pad or voice confirm — ends response window
+      markTiming('answerConfirmed', value);
+
       if (isCorrect) {
         setCorrectMessageIndex((i) => nextCorrectMessageIndex(i));
         setFeedback('correct');
+        console.debug('[App] VoiceTimingMarker feedbackShown type=correct');
+        markTiming('feedbackShown', 'correct');
       } else {
         setFeedback('incorrect');
+        console.debug('[App] VoiceTimingMarker feedbackShown type=incorrect');
+        markTiming('feedbackShown', 'incorrect');
       }
 
       setAwaitingAdvance(true);
